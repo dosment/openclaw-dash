@@ -89,6 +89,28 @@
         
         .stat-v { font-size: 16px; font-weight: 700; }
         .stat-l { font-size: 9px; color: var(--muted); text-transform: uppercase; }
+        
+        /* Channel badges */
+        .channels-stat { flex: 2; }
+        .channels-row { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
+        .ch-badge { 
+            display: inline-flex; 
+            align-items: center; 
+            gap: 2px;
+            padding: 2px 6px; 
+            border-radius: 3px; 
+            font-size: 10px; 
+            font-weight: 600;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border);
+        }
+        .ch-badge.ch-active { 
+            background: rgba(79, 172, 254, 0.15); 
+            border-color: var(--ok);
+            color: var(--ok);
+        }
+        .ch-badge.ch-idle { color: var(--muted); }
+        .ch-none { color: var(--muted); font-size: 10px; }
 
         .grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
         @media (max-width: 1000px) { .grid { grid-template-columns: 1fr 1fr; } }
@@ -254,6 +276,46 @@
             } catch(e) { console.error(e); }
         }
         
+        // Channel icons (letter codes)
+        const channelIcons = {
+            discord: 'D',
+            telegram: 'T', 
+            whatsapp: 'W',
+            signal: 'S',
+            slack: 'K',
+            imessage: 'i',
+            gchat: 'G',
+            teams: 'M',
+            matrix: 'X',
+            cli: '>_',
+            web: 'W',
+            twitch: 'Tw',
+            hook: 'H',
+            api: 'A',
+            voice: 'V',
+            other: '?'
+        };
+        
+        function renderChannels(channels) {
+            if (!channels || !channels.counts) return '';
+            const counts = channels.counts;
+            const active = channels.active || [];
+            
+            // Sort by count descending
+            const sorted = Object.entries(counts)
+                .filter(([ch]) => ch !== 'cron')  // Exclude cron from channel display
+                .sort((a, b) => b[1] - a[1]);
+            
+            if (sorted.length === 0) return '<span class="ch-none">No channels</span>';
+            
+            return sorted.map(([ch, count]) => {
+                const icon = channelIcons[ch] || ch[0].toUpperCase();
+                const isActive = active.includes(ch);
+                const cls = isActive ? 'ch-active' : 'ch-idle';
+                return `<span class="ch-badge ${cls}" title="${ch}: ${count} session${count>1?'s':''}">${icon}${count}</span>`;
+            }).join('');
+        }
+        
         function render(d) {
             window.lastData = d;  // Store for re-filtering
             
@@ -292,6 +354,9 @@
                         <div class="stat-l">Active Chats</div>
                     </div>
                     <div class="stat-tip">Chat sessions active in last 60s</div>
+                </div>
+                <div class="stat channels-stat">
+                    <div class="channels-row">${renderChannels(d.channels)}</div>
                 </div>
                 <div class="stat">
                     <div class="status-icon ${s.error_count?'err':'ok'}"></div>

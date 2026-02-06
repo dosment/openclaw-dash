@@ -333,6 +333,42 @@ def count_session_messages(session_file):
     except:
         return 0
 
+def extract_channel(key):
+    """Extract channel type from session key."""
+    # Keys like: agent:tony:discord:channel:123, agent:tony:telegram:chat:123, agent:tony:main
+    parts = key.split(":")
+    if len(parts) >= 3:
+        channel = parts[2].lower()
+        # Normalize channel names
+        channel_map = {
+            "discord": "discord",
+            "telegram": "telegram",
+            "whatsapp": "whatsapp",
+            "signal": "signal",
+            "slack": "slack",
+            "imessage": "imessage",
+            "bluebubbles": "imessage",
+            "googlechat": "gchat",
+            "msteams": "teams",
+            "matrix": "matrix",
+            "mattermost": "mattermost",
+            "line": "line",
+            "feishu": "feishu",
+            "nostr": "nostr",
+            "twitch": "twitch",
+            "zalo": "zalo",
+            "webchat": "web",
+            "main": "cli",
+            "cron": "cron",
+            "isolated": "cron",
+            "hook": "hook",
+            "openresponses": "api",
+            "openresponses-user": "api",
+            "voice": "voice",
+        }
+        return channel_map.get(channel, channel)
+    return "other"
+
 def get_sessions():
     agent_dirs = get_all_agent_dirs()
     now_ms = datetime.now().timestamp() * 1000
@@ -370,9 +406,11 @@ def get_sessions():
                     session_jsonl = sessions_dir / f"{session_id}.jsonl"
                     msg_count = count_session_messages(session_jsonl)
                 tokens = info.get("totalTokens", 0)
+                channel = extract_channel(key)
                 sess = {
                     "key": key,
                     "agent": AGENT_ALIASES.get(agent_name, agent_name),
+                    "channel": channel,
                     "displayName": display,
                     "model": categorize_model(info.get("model", "")) or "default",
                     "tokens": tokens,
@@ -558,6 +596,16 @@ def build_status():
     err_jobs = [j for j in enabled_jobs if j["status"] == "err"]
     active_sessions = len([s for s in main_sessions if s["status"] == "active"])
     active_subs = len([s for s in sub_agents if s["status"] == "active"])
+    
+    # Channel breakdown (exclude cron/isolated from main channel counts)
+    channel_counts = {}
+    channel_active = {}
+    for s in main_sessions:
+        ch = s.get("channel", "other")
+        channel_counts[ch] = channel_counts.get(ch, 0) + 1
+        if s["status"] == "active":
+            channel_active[ch] = True
+    
     # Get unique agents after applying aliases
     raw_agents = get_all_agent_dirs().keys()
     agents = list(set(AGENT_ALIASES.get(a, a) for a in raw_agents))
@@ -568,6 +616,10 @@ def build_status():
         "internet": internet,
         "defaultModel": get_default_model(),
         "availableModels": _model_cache.get("models", []),
+        "channels": {
+            "counts": channel_counts,
+            "active": list(channel_active.keys()),
+        },
         "summary": {
             "jobs_ok": len(ok_jobs),
             "jobs_total": len(enabled_jobs),
