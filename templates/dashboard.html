@@ -279,22 +279,16 @@
         
         // Channel icons (letter codes)
         const channelIcons = {
-            discord: 'D',
-            telegram: 'T', 
-            whatsapp: 'W',
-            signal: 'S',
-            slack: 'K',
-            imessage: 'i',
-            gchat: 'G',
-            teams: 'M',
-            matrix: 'X',
-            cli: '>_',
-            web: 'W',
-            twitch: 'Tw',
-            hook: 'H',
-            api: 'A',
-            voice: 'V',
-            other: '?'
+            // Core
+            discord: 'D', telegram: 'T', whatsapp: 'W', imessage: 'i', web: 'Wc',
+            // Enterprise  
+            slack: 'Sl', teams: 'Ms', gchat: 'Gc', mattermost: 'Mm', nextcloud: 'Nc', twitch: 'Tw',
+            // Privacy
+            signal: 'Si', matrix: 'Mx', nostr: 'No',
+            // Regional
+            zalo: 'Za', line: 'Li', feishu: 'Fe',
+            // Internal
+            cli: '>_', api: 'A', hook: 'H', voice: 'V', other: '?'
         };
         
         function renderChannels(channels) {
@@ -421,11 +415,18 @@
             
             // Chat sessions - tokens are the cumulative count for this session's lifetime
             const channelNames = {
+                // Core
                 discord: 'Discord', telegram: 'Telegram', whatsapp: 'WhatsApp',
-                signal: 'Signal', slack: 'Slack', imessage: 'iMessage',
-                gchat: 'GChat', teams: 'Teams', matrix: 'Matrix',
-                cli: 'CLI', api: 'API', hook: 'Hook', voice: 'Voice',
-                web: 'Web', twitch: 'Twitch', other: 'Other'
+                imessage: 'iMessage', web: 'WebChat',
+                // Enterprise
+                slack: 'Slack', teams: 'Teams', gchat: 'GChat',
+                mattermost: 'Mattermost', nextcloud: 'Nextcloud', twitch: 'Twitch',
+                // Privacy
+                signal: 'Signal', matrix: 'Matrix', nostr: 'Nostr',
+                // Regional
+                zalo: 'Zalo', line: 'LINE', feishu: 'Feishu',
+                // Internal
+                cli: 'CLI', api: 'API', hook: 'Hook', voice: 'Voice', other: 'Other'
             };
             const sessRow = s => {
                 const tokensK = (s.tokens/1000).toFixed(0);

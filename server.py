@@ -358,6 +358,8 @@ def extract_channel(key):
             "twitch": "twitch",
             "zalo": "zalo",
             "webchat": "web",
+            "nextcloud-talk": "nextcloud",
+            "nextcloud": "nextcloud",
             "main": "cli",
             "cron": "cron",
             "isolated": "cron",
