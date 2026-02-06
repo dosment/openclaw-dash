@@ -18,6 +18,95 @@ OPENCLAW_DIR = Path.home() / ".openclaw"
 CRON_FILE = OPENCLAW_DIR / "cron" / "jobs.json"
 CONFIG_FILE = OPENCLAW_DIR / "openclaw.json"
 
+# Model cache (refreshed on startup and periodically)
+_model_cache = {"models": [], "aliases": {}, "updated": 0}
+
+def refresh_model_cache():
+    """Fetch available models from OpenClaw CLI."""
+    global _model_cache
+    try:
+        import subprocess
+        import shutil
+        
+        # Find openclaw binary
+        openclaw_bin = shutil.which("openclaw")
+        if not openclaw_bin:
+            # Check common locations
+            for path in [
+                Path.home() / ".nvm/versions/node/v22.22.0/bin/openclaw",
+                Path("/usr/local/bin/openclaw"),
+                Path("/usr/bin/openclaw"),
+            ]:
+                if path.exists():
+                    openclaw_bin = str(path)
+                    break
+        if not openclaw_bin:
+            return
+        
+        # Ensure node is in PATH for nvm-installed openclaw
+        import os
+        env = os.environ.copy()
+        nvm_bin = str(Path.home() / ".nvm/versions/node/v22.22.0/bin")
+        env["PATH"] = f"{nvm_bin}:{env.get('PATH', '')}"
+        
+        result = subprocess.run(
+            [openclaw_bin, "models", "list"],
+            capture_output=True, text=True, timeout=10, env=env
+        )
+        if result.returncode != 0:
+            return
+        
+        models = []
+        aliases = {}
+        for line in result.stdout.strip().split("\n")[1:]:  # Skip header
+            if not line.strip():
+                continue
+            parts = line.split()
+            if len(parts) >= 1:
+                model_id = parts[0]  # e.g., "anthropic/claude-opus-4-5-20251101"
+                # Extract short name from model ID
+                short = model_id.split("/")[-1]  # "claude-opus-4-5-20251101"
+                # Simplify common patterns
+                if "opus-4-6" in short or "opus-2026" in short:
+                    display = "opus-4.6"
+                elif "opus" in short:
+                    display = "opus-4.5"
+                elif "sonnet" in short:
+                    display = "sonnet"
+                elif "haiku" in short:
+                    display = "haiku"
+                elif "gemini-3" in short or "flash-3" in short:
+                    display = "flash-3"
+                elif "gemini-2" in short or "flash" in short:
+                    display = "flash-2.5"
+                elif "kimi" in short or "k2.5" in short:
+                    display = "kimi-k2.5"
+                elif "deepseek" in short:
+                    display = "deepseek"
+                elif "gpt-4o" in short:
+                    display = "gpt-4o"
+                elif "gpt-4" in short:
+                    display = "gpt-4"
+                else:
+                    display = short[:15]
+                
+                if display not in models:
+                    models.append(display)
+                aliases[model_id] = display
+                aliases[short] = display
+                
+                # Parse aliases from tags (e.g., "alias:sonnet")
+                if "alias:" in line:
+                    for match in re.findall(r'alias:(\w+)', line):
+                        aliases[match] = display
+        
+        _model_cache = {"models": models, "aliases": aliases, "updated": time.time()}
+    except Exception as e:
+        pass  # Silently fall back to pattern matching
+
+# Refresh on startup
+refresh_model_cache()
+
 # Multiple agent base directories (main OpenClaw + Steve's separate instance)
 AGENT_BASES = [
     OPENCLAW_DIR / "agents",
@@ -72,9 +161,15 @@ def get_default_model():
         return "opus-4.5"
 
 def categorize_model(model_str):
-    """Categorize model string into display name."""
+    """Categorize model string into display name using cached model list."""
     if not model_str:
         return None
+    
+    # Check cache first
+    if model_str in _model_cache["aliases"]:
+        return _model_cache["aliases"][model_str]
+    
+    # Fallback to pattern matching for models not in cache
     m = model_str.lower()
     if 'opus-4.6' in m or 'opus-2026' in m: return 'opus-4.6'
     if 'opus-4.5' in m or 'opus-2025' in m or 'opus' in m: return 'opus-4.5'
@@ -472,6 +567,7 @@ def build_status():
         "agents": agents,
         "internet": internet,
         "defaultModel": get_default_model(),
+        "availableModels": _model_cache.get("models", []),
         "summary": {
             "jobs_ok": len(ok_jobs),
             "jobs_total": len(enabled_jobs),
