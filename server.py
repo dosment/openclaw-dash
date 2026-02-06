@@ -572,6 +572,70 @@ def check_internet():
     except:
         return {"status": "down", "latency": None}
 
+# Cache for openclaw status (don't poll too frequently)
+_openclaw_status_cache = {"data": None, "updated": 0}
+
+def get_openclaw_status():
+    """Get gateway health and security audit from openclaw status."""
+    global _openclaw_status_cache
+    now = time.time()
+    
+    # Cache for 30 seconds
+    if _openclaw_status_cache["data"] and (now - _openclaw_status_cache["updated"]) < 30:
+        return _openclaw_status_cache["data"]
+    
+    try:
+        import subprocess
+        import shutil
+        
+        openclaw_bin = shutil.which("openclaw")
+        if not openclaw_bin:
+            for path in [
+                Path.home() / ".nvm/versions/node/v22.22.0/bin/openclaw",
+                Path("/usr/local/bin/openclaw"),
+            ]:
+                if path.exists():
+                    openclaw_bin = str(path)
+                    break
+        if not openclaw_bin:
+            return None
+        
+        import os
+        env = os.environ.copy()
+        nvm_bin = str(Path.home() / ".nvm/versions/node/v22.22.0/bin")
+        env["PATH"] = f"{nvm_bin}:{env.get('PATH', '')}"
+        
+        result = subprocess.run(
+            [openclaw_bin, "status", "--json"],
+            capture_output=True, text=True, timeout=10, env=env
+        )
+        if result.returncode != 0:
+            return None
+        
+        data = json.loads(result.stdout)
+        
+        # Extract what we need
+        gateway = data.get("gateway", {})
+        security = data.get("securityAudit", {}).get("summary", {})
+        
+        status = {
+            "gateway": {
+                "reachable": gateway.get("reachable", False),
+                "latency": gateway.get("connectLatencyMs"),
+                "mode": gateway.get("mode", "unknown"),
+            },
+            "security": {
+                "critical": security.get("critical", 0),
+                "warn": security.get("warn", 0),
+                "info": security.get("info", 0),
+            }
+        }
+        
+        _openclaw_status_cache = {"data": status, "updated": now}
+        return status
+    except:
+        return None
+
 def get_recent_errors():
     """Get recent errors from cron jobs."""
     errors = []
@@ -612,10 +676,12 @@ def build_status():
     raw_agents = get_all_agent_dirs().keys()
     agents = list(set(AGENT_ALIASES.get(a, a) for a in raw_agents))
     internet = check_internet()
+    openclaw_status = get_openclaw_status()
     return {
         "ts": datetime.now().isoformat(),
         "agents": agents,
         "internet": internet,
+        "openclaw": openclaw_status,
         "defaultModel": get_default_model(),
         "availableModels": _model_cache.get("models", []),
         "channels": {

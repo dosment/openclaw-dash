@@ -377,6 +377,22 @@
                     </div>
                     <div class="stat-tip">Latency to Google DNS (8.8.8.8)</div>
                 </div>
+                <div class="stat">
+                    <div class="status-icon ${d.openclaw?.gateway?.reachable?'ok':'err'}"></div>
+                    <div>
+                        <div class="stat-v">${d.openclaw?.gateway?.reachable ? (d.openclaw.gateway.latency + 'ms') : 'Down'}</div>
+                        <div class="stat-l">Gateway</div>
+                    </div>
+                    <div class="stat-tip">OpenClaw gateway WebSocket latency</div>
+                </div>
+                <div class="stat">
+                    <div class="status-icon ${(d.openclaw?.security?.critical || d.openclaw?.security?.warn) ? 'err' : 'ok'}"></div>
+                    <div>
+                        <div class="stat-v">${d.openclaw?.security ? (d.openclaw.security.critical + d.openclaw.security.warn) : '?'}</div>
+                        <div class="stat-l">Warnings</div>
+                    </div>
+                    <div class="stat-tip">${d.openclaw?.security ? `${d.openclaw.security.critical} critical, ${d.openclaw.security.warn} warnings, ${d.openclaw.security.info} info` : 'Security audit'}</div>
+                </div>
             `;
             
             // Activity feed
