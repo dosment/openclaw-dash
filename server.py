@@ -315,6 +315,37 @@ def get_cron_jobs():
         print(f"Cron error: {e}")
         return []
 
+def get_email_status():
+    """Get last email check time from cron job."""
+    if not CRON_FILE.exists():
+        return None
+    try:
+        with open(CRON_FILE) as f:
+            data = json.load(f)
+        for job in data.get("jobs", []):
+            if "email" in job.get("name", "").lower():
+                state = job.get("state", {})
+                last_run_ms = state.get("lastRunAtMs")
+                if last_run_ms:
+                    now_ms = datetime.now().timestamp() * 1000
+                    age_ms = now_ms - last_run_ms
+                    age_mins = int(age_ms / 60000)
+                    if age_mins < 60:
+                        ago = f"{age_mins}m ago"
+                    elif age_mins < 1440:
+                        ago = f"{age_mins // 60}h ago"
+                    else:
+                        ago = f"{age_mins // 1440}d ago"
+                    return {
+                        "lastCheck": ago,
+                        "lastRunMs": last_run_ms,
+                        "status": state.get("lastStatus", "unknown"),
+                        "enabled": job.get("enabled", True),
+                    }
+        return None
+    except:
+        return None
+
 def count_session_messages(session_file):
     """Count actual messages in a session .jsonl file."""
     try:
@@ -677,10 +708,12 @@ def build_status():
     agents = list(set(AGENT_ALIASES.get(a, a) for a in raw_agents))
     internet = check_internet()
     openclaw_status = get_openclaw_status()
+    email_status = get_email_status()
     return {
         "ts": datetime.now().isoformat(),
         "agents": agents,
         "internet": internet,
+        "email": email_status,
         "openclaw": openclaw_status,
         "defaultModel": get_default_model(),
         "availableModels": _model_cache.get("models", []),

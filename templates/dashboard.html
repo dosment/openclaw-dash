@@ -370,6 +370,14 @@
                     <div class="stat-tip">${subsTip}, ${s.total_subs} total this session</div>
                 </div>
                 <div class="stat">
+                    <div class="status-icon ${d.email?.status==='ok'?'ok': d.email?.enabled===false?'off':'err'}"></div>
+                    <div>
+                        <div class="stat-v">${d.email?.lastCheck || 'N/A'}</div>
+                        <div class="stat-l">Email</div>
+                    </div>
+                    <div class="stat-tip">${d.email ? (d.email.enabled ? 'Last inbox check' : 'Email check disabled') : 'No email cron job found'}</div>
+                </div>
+                <div class="stat">
                     <div class="status-icon ${d.internet?.status==='ok'?'ok':'err'}"></div>
                     <div>
                         <div class="stat-v">${d.internet?.status==='ok' ? (d.internet.latency ? d.internet.latency + 'ms' : 'Online') : 'Offline'}</div>
