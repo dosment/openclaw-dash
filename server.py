@@ -21,11 +21,11 @@ CONFIG_FILE = OPENCLAW_DIR / "openclaw.json"
 # Multiple agent base directories (main OpenClaw + Steve's separate instance)
 AGENT_BASES = [
     OPENCLAW_DIR / "agents",
-    Path.home() / ".clawdbot-steve" / "agents",
 ]
 
-EXCLUDED_AGENTS = {"shadow"}  # Deleted/inactive agents to hide
-AGENT_ALIASES = {"main": "tony"}  # Merge these agents in display
+# Customize these for your setup
+EXCLUDED_AGENTS = set()  # Agents to hide, e.g., {"shadow", "test"}
+AGENT_ALIASES = {}  # Rename agents in UI, e.g., {"main": "assistant"}
 
 def get_all_agent_dirs():
     """Get all agent session directories from all bases."""
