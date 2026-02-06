@@ -91,7 +91,6 @@
         .stat-l { font-size: 9px; color: var(--muted); text-transform: uppercase; }
         
         /* Channel badges */
-        .channels-stat { flex: 2; }
         .channels-row { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
         .ch-badge { 
             display: inline-flex; 
@@ -335,47 +334,12 @@
             
             document.getElementById('stats').innerHTML = `
                 <div class="stat">
-                    <div class="status-icon ${s.jobs_healthy?'ok':'err'}"></div>
+                    <div class="status-icon ${d.openclaw?.gateway?.reachable?'ok':'err'}"></div>
                     <div>
-                        <div class="stat-v">${s.jobs_ok}/${s.jobs_total}</div>
-                        <div class="stat-l">Enabled Jobs</div>
+                        <div class="stat-v">${d.openclaw?.gateway?.reachable ? (d.openclaw.gateway.latency + 'ms') : 'Down'}</div>
+                        <div class="stat-l">Gateway</div>
                     </div>
-                    <div class="stat-tip">${s.jobs_ok} healthy, ${s.jobs_total - s.jobs_ok} errors${disabledTip}</div>
-                </div>
-                <div class="stat">
-                    <div class="status-icon ${s.active_sessions?'ok':'off'}"></div>
-                    <div>
-                        <div class="stat-v">${s.active_sessions}</div>
-                        <div class="stat-l">Active Chats</div>
-                    </div>
-                    <div class="stat-tip">Chat sessions active in last 60s</div>
-                </div>
-                <div class="stat channels-stat">
-                    <div class="channels-row">${renderChannels(d.channels)}</div>
-                </div>
-                <div class="stat">
-                    <div class="status-icon ${s.error_count?'err':'ok'}"></div>
-                    <div>
-                        <div class="stat-v">${s.error_count}</div>
-                        <div class="stat-l">Job Errors</div>
-                    </div>
-                    <div class="stat-tip">Cron jobs that failed last run</div>
-                </div>
-                <div class="stat">
-                    <div class="status-icon ${s.active_subs?'ok':'off'}"></div>
-                    <div>
-                        <div class="stat-v">${s.active_subs}/${s.total_subs}</div>
-                        <div class="stat-l">Sub-Agents</div>
-                    </div>
-                    <div class="stat-tip">${subsTip}, ${s.total_subs} total this session</div>
-                </div>
-                <div class="stat">
-                    <div class="status-icon ${d.email?.status==='ok'?'ok': d.email?.enabled===false?'off':'err'}"></div>
-                    <div>
-                        <div class="stat-v">${d.email?.lastCheck || 'N/A'}</div>
-                        <div class="stat-l">Email</div>
-                    </div>
-                    <div class="stat-tip">${d.email ? (d.email.enabled ? 'Last inbox check' : 'Email check disabled') : 'No email cron job found'}</div>
+                    <div class="stat-tip">OpenClaw gateway WebSocket latency</div>
                 </div>
                 <div class="stat">
                     <div class="status-icon ${d.internet?.status==='ok'?'ok':'err'}"></div>
@@ -386,12 +350,12 @@
                     <div class="stat-tip">Latency to Google DNS (8.8.8.8)</div>
                 </div>
                 <div class="stat">
-                    <div class="status-icon ${d.openclaw?.gateway?.reachable?'ok':'err'}"></div>
+                    <div class="status-icon ${d.email?.status==='ok'?'ok': d.email?.enabled===false?'off':'err'}"></div>
                     <div>
-                        <div class="stat-v">${d.openclaw?.gateway?.reachable ? (d.openclaw.gateway.latency + 'ms') : 'Down'}</div>
-                        <div class="stat-l">Gateway</div>
+                        <div class="stat-v">${d.email?.lastCheck || 'N/A'}</div>
+                        <div class="stat-l">Email</div>
                     </div>
-                    <div class="stat-tip">OpenClaw gateway WebSocket latency</div>
+                    <div class="stat-tip">${d.email ? (d.email.enabled ? 'Last inbox check' : 'Email check disabled') : 'No email cron job found'}</div>
                 </div>
                 <div class="stat">
                     <div class="status-icon ${(d.openclaw?.security?.critical || d.openclaw?.security?.warn) ? 'err' : 'ok'}"></div>
@@ -400,6 +364,46 @@
                         <div class="stat-l">Warnings</div>
                     </div>
                     <div class="stat-tip">${d.openclaw?.security ? `${d.openclaw.security.critical} critical, ${d.openclaw.security.warn} warnings, ${d.openclaw.security.info} info` : 'Security audit'}</div>
+                </div>
+                <div class="stat">
+                    <div class="status-icon ${s.jobs_healthy?'ok':'err'}"></div>
+                    <div>
+                        <div class="stat-v">${s.jobs_ok}/${s.jobs_total}</div>
+                        <div class="stat-l">Jobs</div>
+                    </div>
+                    <div class="stat-tip">${s.jobs_ok} healthy, ${s.jobs_total - s.jobs_ok} errors${disabledTip}</div>
+                </div>
+                <div class="stat">
+                    <div class="status-icon ${s.error_count?'err':'ok'}"></div>
+                    <div>
+                        <div class="stat-v">${s.error_count}</div>
+                        <div class="stat-l">Errors</div>
+                    </div>
+                    <div class="stat-tip">Cron jobs that failed last run</div>
+                </div>
+                <div class="stat">
+                    <div class="status-icon ${s.active_sessions?'ok':'off'}"></div>
+                    <div>
+                        <div class="stat-v">${s.active_sessions}</div>
+                        <div class="stat-l">Chats</div>
+                    </div>
+                    <div class="stat-tip">Chat sessions active in last 60s</div>
+                </div>
+                <div class="stat">
+                    <div class="status-icon ${s.active_subs?'ok':'off'}"></div>
+                    <div>
+                        <div class="stat-v">${s.active_subs}/${s.total_subs}</div>
+                        <div class="stat-l">Sub-Agents</div>
+                    </div>
+                    <div class="stat-tip">${subsTip}, ${s.total_subs} total this session</div>
+                </div>
+                <div class="stat">
+                    <div class="status-icon ok"></div>
+                    <div>
+                        <div class="stat-l" style="margin-bottom:2px;">Channels</div>
+                        <div class="channels-row">${renderChannels(d.channels)}</div>
+                    </div>
+                    <div class="stat-tip">Connected messaging platforms</div>
                 </div>
             `;
             
