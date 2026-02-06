@@ -140,6 +140,7 @@
         .tag.deepseek { color: #eab308; border-color: rgba(234,179,8,0.4); }
         .tag.neotron { color: #8b5cf6; border-color: rgba(139,92,246,0.4); }
         .tag.default, .tag.other { color: var(--muted); border-color: #333; }
+        .tag.channel { color: #a1a1aa; border-color: #3f3f46; background: rgba(63,63,70,0.3); }
 
         .feed-row { display: flex; gap: 6px; padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,0.03); font-size: 10px; cursor: help; }
         .feed-row:hover { background: rgba(255,255,255,0.02); }
@@ -419,9 +420,17 @@
                 '<div class="note">No sub-agents this session</div>';
             
             // Chat sessions - tokens are the cumulative count for this session's lifetime
+            const channelNames = {
+                discord: 'Discord', telegram: 'Telegram', whatsapp: 'WhatsApp',
+                signal: 'Signal', slack: 'Slack', imessage: 'iMessage',
+                gchat: 'GChat', teams: 'Teams', matrix: 'Matrix',
+                cli: 'CLI', api: 'API', hook: 'Hook', voice: 'Voice',
+                web: 'Web', twitch: 'Twitch', other: 'Other'
+            };
             const sessRow = s => {
                 const tokensK = (s.tokens/1000).toFixed(0);
                 const agentBadge = d.agents && d.agents.length > 1 ? `<span style="color:#71717a;font-size:8px;margin-left:4px;">[${s.agent}]</span>` : '';
+                const chName = channelNames[s.channel] || s.channel;
                 return `
                     <div class="row" title="Session lifetime: ${s.messages} messages, ${tokensK}k tokens used">
                         <div class="status-icon ${s.status==='active'?'ok':'off'}"></div>
@@ -429,6 +438,7 @@
                             <div class="row-name">${s.displayName}${agentBadge}</div>
                             <div class="row-sub">${tokensK}k tokens</div>
                         </div>
+                        <div class="tag channel">${chName}</div>
                         <div class="tag ${s.model}">${s.model}</div>
                     </div>
                 `;

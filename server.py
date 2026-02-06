@@ -258,7 +258,7 @@ def get_next_fire(schedule):
                     return "past"
                 delta = at_dt - now
                 if delta.days > 0:
-                    return f"in {delta.days}d"
+                    return at_dt.strftime("%b %d")
                 hours = delta.seconds // 3600
                 mins = (delta.seconds % 3600) // 60
                 if hours > 0:
