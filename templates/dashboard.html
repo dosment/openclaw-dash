@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tony Status</title>
+    <style>
+        :root {
+            --bg: #09090b;
+            --card: #18181b;
+            --border: #27272a;
+            --text: #f4f4f5;
+            --muted: #71717a;
+            --opus: #a855f7;
+            --sonnet: #ec4899;
+            --haiku: #14b8a6;
+            --flash3: #06b6d4;
+            --flash: #3b82f6;
+            --kimi: #f97316;
+            --ok: #10b981;
+            --warn: #f59e0b;
+            --err: #ef4444;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            background: var(--bg);
+            color: var(--text);
+            padding: 8px;
+            font-size: 12px;
+            line-height: 1.3;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 4px 8px;
+            margin-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+        header h1 { font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: 0.15em; }
+        .live { display: flex; align-items: center; gap: 6px; font-size: 10px; color: var(--ok); }
+        .pulse { width: 6px; height: 6px; border-radius: 50%; background: var(--ok); animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+        
+        .stats { display: flex; gap: 8px; margin-bottom: 8px; }
+        .stat { 
+            background: var(--card); 
+            border: 1px solid var(--border); 
+            padding: 8px 12px; 
+            border-radius: 4px; 
+            display: flex; 
+            align-items: center; 
+            gap: 8px; 
+            flex: 1;
+            cursor: help;
+            position: relative;
+        }
+        .stat:hover .stat-tip { display: block; }
+        .stat-tip {
+            display: none;
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            border: 1px solid #555;
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 10px;
+            white-space: nowrap;
+            z-index: 100;
+            margin-bottom: 4px;
+        }
+        
+        /* Colorblind-friendly status indicators using shapes + colors */
+        .status-icon { font-size: 12px; flex-shrink: 0; width: 16px; text-align: center; }
+        .status-icon.ok { color: #3b82f6; } /* Blue for good */
+        .status-icon.ok::before { content: "●"; }
+        .status-icon.err { color: #f97316; } /* Orange for error */
+        .status-icon.err::before { content: "!"; font-weight: 900; }
+        .status-icon.off { color: #555; } /* Gray for inactive */
+        .status-icon.off::before { content: "○"; }
+        
+        .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+        .dot.ok { background: #3b82f6; box-shadow: 0 0 6px #3b82f6; }
+        .dot.err { background: #f97316; box-shadow: 0 0 6px #f97316; }
+        .dot.off { background: #444; }
+        
+        .stat-v { font-size: 16px; font-weight: 700; }
+        .stat-l { font-size: 9px; color: var(--muted); text-transform: uppercase; }
+
+        .grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+        @media (max-width: 1000px) { .grid { grid-template-columns: 1fr 1fr; } }
+        
+        .panel { background: var(--card); border: 1px solid var(--border); border-radius: 4px; overflow: hidden; }
+        .panel-h { padding: 6px 8px; background: rgba(255,255,255,0.02); border-bottom: 1px solid var(--border); font-size: 9px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+        .panel-b { padding: 4px; max-height: 260px; overflow-y: auto; }
+        
+        .row { display: flex; align-items: center; gap: 6px; padding: 4px 6px; border-radius: 3px; margin-bottom: 2px; background: rgba(0,0,0,0.3); cursor: default; }
+        .row:hover { background: rgba(255,255,255,0.05); }
+        .row.inactive { opacity: 0.4; }
+        .row .status-icon { font-size: 10px; width: 14px; }
+        .row-m { flex: 1; min-width: 0; }
+        .row-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 11px; }
+        .row-sub { font-size: 9px; color: var(--muted); margin-top: 1px; }
+        .row-s { font-size: 9px; color: var(--muted); text-align: right; }
+        .row-next { font-size: 9px; color: var(--ok); font-weight: 600; }
+        .tag { font-size: 8px; padding: 1px 4px; border-radius: 2px; border: 1px solid; font-weight: 600; }
+        .tag.opus-4\.5 { color: var(--opus); border-color: rgba(168,85,247,0.4); }
+        .tag.opus-4\.6 { color: #6366f1; border-color: rgba(99,102,241,0.4); }
+        .tag.sonnet { color: var(--sonnet); border-color: rgba(236,72,153,0.4); }
+        .tag.haiku { color: var(--haiku); border-color: rgba(20,184,166,0.4); }
+        .tag.flash-3 { color: var(--flash3); border-color: rgba(6,182,212,0.4); }
+        .tag.flash-2\.5, .tag.flash { color: var(--flash); border-color: rgba(59,130,246,0.4); }
+        .tag.kimi-k2\.5 { color: var(--kimi); border-color: rgba(249,115,22,0.4); }
+        .tag.gpt-4o { color: #10b981; border-color: rgba(16,185,129,0.4); }
+        .tag.deepseek { color: #eab308; border-color: rgba(234,179,8,0.4); }
+        .tag.neotron { color: #8b5cf6; border-color: rgba(139,92,246,0.4); }
+        .tag.default, .tag.other { color: var(--muted); border-color: #333; }
+
+        .feed-row { display: flex; gap: 6px; padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,0.03); font-size: 10px; cursor: help; }
+        .feed-row:hover { background: rgba(255,255,255,0.02); }
+        .feed-t { width: 14px; font-weight: 800; opacity: 0.5; text-align: center; }
+        .feed-t.user { color: var(--flash); }
+        .feed-t.bot { color: var(--opus); }
+        .feed-t.tool { color: var(--ok); }
+        .feed-txt { flex: 1; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .feed-time { font-size: 9px; color: #444; }
+
+        .dist { margin-bottom: 12px; }
+        .dist-h { font-size: 10px; color: var(--muted); margin-bottom: 4px; display: flex; justify-content: space-between; }
+        .bar { display: flex; height: 28px; background: #111; border-radius: 4px; overflow: hidden; }
+        .seg { 
+            height: 100%; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 10px; 
+            font-weight: 700; 
+            color: #fff; 
+            min-width: 0;
+            cursor: help;
+            transition: opacity 0.15s;
+        }
+        .seg:hover { opacity: 0.8; }
+        .leg { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px; font-size: 11px; color: var(--text); }
+        .leg span { display: flex; align-items: center; gap: 5px; }
+        .leg-dot { width: 10px; height: 10px; border-radius: 2px; }
+
+        .err-row { 
+            padding: 6px 8px; 
+            background: rgba(249,115,22,0.1); 
+            border-left: 2px solid #f97316; 
+            margin-bottom: 4px; 
+            border-radius: 0 3px 3px 0;
+            font-size: 10px;
+        }
+        .err-src { color: #f97316; font-weight: 600; font-size: 9px; }
+        .err-msg { color: var(--muted); margin-top: 2px; word-break: break-all; font-size: 9px; }
+
+        .note { font-size: 9px; color: #444; text-align: center; padding: 4px; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>OPENCLAW STATUS</h1>
+        <div style="display:flex; align-items:center; gap:12px;">
+            <select id="agent-filter" style="background:#27272a; color:#f4f4f5; border:1px solid #3f3f46; padding:4px 8px; border-radius:4px; font-size:11px; font-family:inherit;">
+                <option value="">All Agents</option>
+            </select>
+            <div class="live"><div class="pulse"></div><span id="refresh">5s</span></div>
+        </div>
+    </header>
+    
+    <div class="stats" id="stats"></div>
+    
+    <div class="grid">
+        <div class="panel">
+            <div class="panel-h">Activity Feed</div>
+            <div class="panel-b" id="feed"></div>
+        </div>
+        <div class="panel">
+            <div class="panel-h">Sub-Agents</div>
+            <div class="panel-b" id="subs"></div>
+        </div>
+        <div class="panel">
+            <div class="panel-h">Chat Sessions</div>
+            <div class="panel-b" id="sess"></div>
+        </div>
+        <div class="panel">
+            <div class="panel-h">Cron Jobs</div>
+            <div class="panel-b" id="jobs"></div>
+        </div>
+        <div class="panel" id="errors-panel">
+            <div class="panel-h">Errors</div>
+            <div class="panel-b" id="errors"></div>
+        </div>
+        <div class="panel">
+            <div class="panel-h">Model Distribution</div>
+            <div class="panel-b" id="dist"></div>
+        </div>
+    </div>
+
+    <script>
+        let eventSource = null;
+        let lastUpdate = 0;
+        let currentFilter = '';
+        let knownAgents = [];
+        
+        document.getElementById('agent-filter').addEventListener('change', (e) => {
+            currentFilter = e.target.value;
+            // Re-render with filter
+            if (window.lastData) render(window.lastData);
+        });
+        
+        function connect() {
+            if (eventSource) {
+                eventSource.close();
+            }
+            
+            eventSource = new EventSource('/api/stream');
+            
+            eventSource.onmessage = (event) => {
+                try {
+                    const d = JSON.parse(event.data);
+                    render(d);
+                    lastUpdate = Date.now();
+                    document.getElementById('refresh').textContent = 'LIVE';
+                    document.getElementById('refresh').style.color = '#10b981';
+                } catch(e) {
+                    console.error('Parse error:', e);
+                }
+            };
+            
+            eventSource.onerror = (e) => {
+                console.log('SSE error, reconnecting in 3s...');
+                document.getElementById('refresh').textContent = 'reconnecting...';
+                document.getElementById('refresh').style.color = '#f97316';
+                eventSource.close();
+                setTimeout(connect, 3000);
+            };
+            
+            eventSource.onopen = () => {
+                console.log('SSE connected');
+            };
+        }
+        
+        // Fallback polling if SSE fails
+        async function load() {
+            try {
+                const d = await (await fetch('/api/status')).json();
+                render(d);
+            } catch(e) { console.error(e); }
+        }
+        
+        function render(d) {
+            window.lastData = d;  // Store for re-filtering
+            
+            // Update agent dropdown
+            if (d.agents && d.agents.length !== knownAgents.length) {
+                knownAgents = d.agents;
+                const select = document.getElementById('agent-filter');
+                const currentVal = select.value;
+                select.innerHTML = '<option value="">All Agents</option>' + 
+                    d.agents.map(a => `<option value="${a}">${a}</option>`).join('');
+                select.value = currentVal;
+            }
+            
+            // Filter function
+            const filterAgent = (item) => !currentFilter || item.agent === currentFilter;
+            
+            const s = d.summary;
+            
+            // Stats with tooltips
+            const disabledTip = s.jobs_disabled > 0 ? ` (${s.jobs_disabled} disabled)` : '';
+            const subsTip = s.active_subs > 0 ? `${s.active_subs} running now` : 'none running';
+            
+            document.getElementById('stats').innerHTML = `
+                <div class="stat">
+                    <div class="status-icon ${s.jobs_healthy?'ok':'err'}"></div>
+                    <div>
+                        <div class="stat-v">${s.jobs_ok}/${s.jobs_total}</div>
+                        <div class="stat-l">Enabled Jobs</div>
+                    </div>
+                    <div class="stat-tip">${s.jobs_ok} healthy, ${s.jobs_total - s.jobs_ok} errors${disabledTip}</div>
+                </div>
+                <div class="stat">
+                    <div class="status-icon ${s.active_sessions?'ok':'off'}"></div>
+                    <div>
+                        <div class="stat-v">${s.active_sessions}</div>
+                        <div class="stat-l">Active Chats</div>
+                    </div>
+                    <div class="stat-tip">Chat sessions active in last 60s</div>
+                </div>
+                <div class="stat">
+                    <div class="status-icon ${s.error_count?'err':'ok'}"></div>
+                    <div>
+                        <div class="stat-v">${s.error_count}</div>
+                        <div class="stat-l">Job Errors</div>
+                    </div>
+                    <div class="stat-tip">Cron jobs that failed last run</div>
+                </div>
+                <div class="stat">
+                    <div class="status-icon ${s.active_subs?'ok':'off'}"></div>
+                    <div>
+                        <div class="stat-v">${s.active_subs}/${s.total_subs}</div>
+                        <div class="stat-l">Sub-Agents</div>
+                    </div>
+                    <div class="stat-tip">${subsTip}, ${s.total_subs} total this session</div>
+                </div>
+                <div class="stat">
+                    <div class="status-icon ${d.internet?.status==='ok'?'ok':'err'}"></div>
+                    <div>
+                        <div class="stat-v">${d.internet?.status==='ok' ? (d.internet.latency ? d.internet.latency + 'ms' : 'Online') : 'Offline'}</div>
+                        <div class="stat-l">Internet</div>
+                    </div>
+                    <div class="stat-tip">Latency to Google DNS (8.8.8.8)</div>
+                </div>
+            `;
+            
+            // Activity feed
+            document.getElementById('feed').innerHTML = d.activity.slice(0,18).map(a => {
+                const typeLabel = {user: 'U', bot: 'T', tool: 'F'}[a.type] || '?';
+                const title = a.detail || a.text;
+                return `
+                    <div class="feed-row" title="${title.replace(/"/g, '&quot;')}">
+                        <div class="feed-t ${a.type}">${typeLabel}</div>
+                        <div class="feed-txt">${a.text}</div>
+                        <div class="feed-time">${new Date(a.ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</div>
+                    </div>
+                `;
+            }).join('') || '<div class="note">No activity</div>';
+            
+            // Sub-agents
+            const subRow = s => {
+                const isActive = s.status === 'active';
+                const time = new Date(s.updatedAt).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+                return `
+                    <div class="row ${isActive ? '' : 'inactive'}">
+                        <div class="status-icon ${isActive?'ok':'off'}"></div>
+                        <div class="row-m">
+                            <div class="row-name">${s.displayName}</div>
+                            <div class="row-sub">${(s.tokens/1000).toFixed(0)}k tokens | ${time}</div>
+                        </div>
+                        <div class="tag ${s.model}">${s.model}</div>
+                    </div>
+                `;
+            };
+            
+            const filteredSubs = d.sub_agents.filter(filterAgent);
+            document.getElementById('subs').innerHTML = filteredSubs.length ? 
+                filteredSubs.map(subRow).join('') : 
+                '<div class="note">No sub-agents this session</div>';
+            
+            // Chat sessions - tokens are the cumulative count for this session's lifetime
+            const sessRow = s => {
+                const tokensK = (s.tokens/1000).toFixed(0);
+                const agentBadge = d.agents && d.agents.length > 1 ? `<span style="color:#71717a;font-size:8px;margin-left:4px;">[${s.agent}]</span>` : '';
+                return `
+                    <div class="row" title="Session lifetime: ${s.messages} messages, ${tokensK}k tokens used">
+                        <div class="status-icon ${s.status==='active'?'ok':'off'}"></div>
+                        <div class="row-m">
+                            <div class="row-name">${s.displayName}${agentBadge}</div>
+                            <div class="row-sub">${tokensK}k tokens</div>
+                        </div>
+                        <div class="tag ${s.model}">${s.model}</div>
+                    </div>
+                `;
+            };
+            const filteredSessions = d.main_sessions.filter(filterAgent);
+            document.getElementById('sess').innerHTML = filteredSessions.length ? 
+                filteredSessions.slice(0,10).map(sessRow).join('') : 
+                '<div class="note">No sessions</div>';
+            
+            // Cron jobs
+            document.getElementById('jobs').innerHTML = d.jobs.slice(0,14).map(j => `
+                <div class="row ${j.enabled?'':'inactive'}" title="${j.lastError || ''}">
+                    <div class="status-icon ${j.status==='ok'?'ok':j.status==='err'?'err':'off'}"></div>
+                    <div class="row-m">
+                        <div class="row-name">${j.name}</div>
+                    </div>
+                    <div class="row-next">${j.nextFire}</div>
+                    <div class="tag ${j.model}">${j.model}</div>
+                </div>
+            `).join('');
+            
+            // Errors panel
+            const errPanel = document.getElementById('errors-panel');
+            if (d.errors && d.errors.length > 0) {
+                errPanel.style.display = 'block';
+                document.getElementById('errors').innerHTML = d.errors.map(e => `
+                    <div class="err-row">
+                        <div class="err-src">${e.source}</div>
+                        <div class="err-msg">${e.error}</div>
+                    </div>
+                `).join('');
+            } else {
+                errPanel.style.display = 'block';
+                document.getElementById('errors').innerHTML = '<div class="note" style="color: #3b82f6;">All clear</div>';
+            }
+
+            // Model distribution
+            const modelColors = {
+                'opus-4.5': '#a855f7',
+                'opus-4.6': '#6366f1',
+                'sonnet': '#ec4899',
+                'haiku': '#14b8a6',
+                'flash-3': '#06b6d4',
+                'flash-2.5': '#3b82f6',
+                'kimi-k2.5': '#f97316',
+                'gpt-4o': '#10b981',
+                'deepseek': '#eab308',
+                'neotron': '#8b5cf6',
+                'other': '#444'
+            };
+            
+            const renderDist = (data, label) => {
+                const entries = Object.entries(data)
+                    .filter(([k,v]) => v > 0 && !['embed', 'delivery', 'other'].includes(k))
+                    .sort((a,b) => b[1] - a[1]);
+                const total = entries.reduce((a,[k,v]) => a + v, 0) || 1;
+                
+                const segs = entries.map(([m,v]) => {
+                    const p = (v/total*100);
+                    const color = modelColors[m] || '#444';
+                    return `<div class="seg" style="width:${p}%; background:${color}" title="${m}: ${v.toLocaleString()} msgs (${p.toFixed(1)}%)">${p>8 ? p.toFixed(0)+'%' : ''}</div>`;
+                }).join('');
+                
+                const legendModels = ['opus-4.5', 'opus-4.6', 'sonnet', 'kimi-k2.5', 'flash-3', 'flash-2.5', 'neotron', 'deepseek'];
+                const leg = legendModels.map(m => {
+                    const v = data[m] || 0;
+                    const p = (v/total*100).toFixed(1);
+                    const color = modelColors[m] || '#444';
+                    if (v === 0 && !['neotron', 'deepseek', 'opus-4.6'].includes(m)) return ''; 
+                    return `<span><div class="leg-dot" style="background:${color}"></div>${m}: ${v > 0 ? p + '%' : '0%'}</span>`;
+                }).join('');
+                
+                return `<div class="dist"><div class="dist-h"><span>${label}</span><span>${total.toLocaleString()} messages</span></div><div class="bar">${segs}</div><div class="leg">${leg}</div></div>`;
+            };
+            
+            document.getElementById('dist').innerHTML = 
+                renderDist(d.usage?.today?.by_model || {}, 'Today') + 
+                renderDist(d.usage?.week?.by_model || {}, 'This Week');
+        }
+        
+        // Start SSE connection
+        connect();
+        
+        // Fallback: if no update in 60s, try polling
+        setInterval(() => {
+            if (Date.now() - lastUpdate > 60000) {
+                console.log('No SSE updates, falling back to poll');
+                load();
+            }
+        }, 30000);
+    </script>
+</body>
+</html>
