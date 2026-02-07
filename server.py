@@ -474,15 +474,19 @@ def get_sessions():
     return main_sessions, sub_agents
 
 def get_usage():
-    now = datetime.now(timezone.utc)
-    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    # Use local time for day boundaries
+    now_local = datetime.now().astimezone()
+    today_start = now_local.replace(hour=0, minute=0, second=0, microsecond=0)
     week_start = today_start - timedelta(days=7)
+    # Convert to UTC for comparison with timestamps
+    today_start_utc = today_start.astimezone(timezone.utc)
+    week_start_utc = week_start.astimezone(timezone.utc)
     usage = {
         "today": {"by_model": {}, "other_samples": []},
         "week": {"by_model": {}, "other_samples": []},
     }
     agent_dirs = get_all_agent_dirs()
-    cutoff = week_start.timestamp()
+    cutoff = week_start_utc.timestamp()
     
     for agent_name, sessions_dir in agent_dirs.items():
         try:
@@ -499,7 +503,7 @@ def get_usage():
                             ts = msg.get("timestamp", "")
                             if not ts: continue
                             msg_time = datetime.fromisoformat(ts.replace("Z", "+00:00"))
-                            if msg_time < week_start: continue
+                            if msg_time < week_start_utc: continue
                             message = msg.get("message", {})
                             raw_model = message.get("model", "")
                             model = categorize_model(raw_model)
@@ -507,7 +511,7 @@ def get_usage():
                             if model == "other" and len(usage["week"]["other_samples"]) < 5:
                                 usage["week"]["other_samples"].append(raw_model)
                             usage["week"]["by_model"][model] = usage["week"]["by_model"].get(model, 0) + 1
-                            if msg_time >= today_start:
+                            if msg_time >= today_start_utc:
                                 usage["today"]["by_model"][model] = usage["today"]["by_model"].get(model, 0) + 1
                         except: continue
             except: continue
