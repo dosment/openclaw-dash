@@ -240,14 +240,20 @@ def get_next_fire(schedule):
         if schedule.get("kind") == "cron":
             expr = schedule.get("expr", "")
             if expr:
-                next_dt = parse_simple_cron(expr)
-                if next_dt:
-                    return format_relative_time(next_dt)
                 parts = expr.split()
                 if len(parts) == 5:
-                    h, m = parts[1], parts[0]
-                    if h != "*" and m != "*":
-                        return f"@{h}:{m.zfill(2) if m.isdigit() else m}"
+                    minute, hour, dom, month, dow = parts
+                    # Check if it's a daily job (runs every day at a specific time)
+                    is_daily = dom == "*" and month == "*" and dow == "*" and hour != "*" and minute != "*"
+                    if is_daily:
+                        return f"daily@{hour}:{minute.zfill(2) if minute.isdigit() else minute}"
+                    # For non-daily, show relative time if we can parse it
+                    next_dt = parse_simple_cron(expr)
+                    if next_dt:
+                        return format_relative_time(next_dt)
+                    # Fallback to @time format
+                    if hour != "*" and minute != "*":
+                        return f"@{hour}:{minute.zfill(2) if minute.isdigit() else minute}"
                 return expr[:12]
         elif schedule.get("kind") == "at":
             at_str = schedule.get("at", "")
