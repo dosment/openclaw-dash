@@ -487,15 +487,17 @@
                 `).join('');
             }
             
-            // Security warnings (from openclaw status)
+            // Security findings (from openclaw status)
             const sec = d.openclaw?.security;
-            if (sec && (sec.critical > 0 || sec.warn > 0)) {
-                errHtml += `
+            if (sec?.findings && sec.findings.length > 0) {
+                const severityColors = { critical: '#ef4444', warn: '#f97316', info: '#3b82f6' };
+                const severityLabels = { critical: 'CRIT', warn: 'WARN', info: 'INFO' };
+                errHtml += sec.findings.map(f => `
                     <div class="err-row">
-                        <div class="err-src" style="color: ${sec.critical > 0 ? '#ef4444' : '#f97316'}">Security</div>
-                        <div class="err-msg">${sec.critical} critical, ${sec.warn} warnings, ${sec.info} info</div>
+                        <div class="err-src" style="color: ${severityColors[f.severity] || '#888'}">${severityLabels[f.severity] || f.severity}</div>
+                        <div class="err-msg">${f.title}</div>
                     </div>
-                `;
+                `).join('');
             }
             
             errPanel.style.display = 'block';

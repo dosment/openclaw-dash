@@ -653,7 +653,9 @@ def get_openclaw_status():
         
         # Extract what we need
         gateway = data.get("gateway", {})
-        security = data.get("securityAudit", {}).get("summary", {})
+        security_audit = data.get("securityAudit", {})
+        security = security_audit.get("summary", {})
+        findings = security_audit.get("findings", [])
         
         status = {
             "gateway": {
@@ -665,6 +667,13 @@ def get_openclaw_status():
                 "critical": security.get("critical", 0),
                 "warn": security.get("warn", 0),
                 "info": security.get("info", 0),
+                "findings": [
+                    {
+                        "severity": f.get("severity", "info"),
+                        "title": f.get("title", "Unknown"),
+                    }
+                    for f in findings
+                ],
             }
         }
         
