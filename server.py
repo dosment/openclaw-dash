@@ -323,6 +323,32 @@ def get_cron_jobs():
         print(f"Cron error: {e}")
         return []
 
+def get_git_status():
+    """Get last commit time from dashboard repo."""
+    try:
+        import subprocess
+        # Get last commit timestamp
+        result = subprocess.run(
+            ["git", "log", "-1", "--format=%ct"],
+            capture_output=True, text=True, timeout=5,
+            cwd=Path(__file__).parent
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            commit_ts = int(result.stdout.strip())
+            now = datetime.now().timestamp()
+            age_secs = now - commit_ts
+            age_mins = int(age_secs / 60)
+            if age_mins < 60:
+                ago = f"{age_mins}m ago"
+            elif age_mins < 1440:
+                ago = f"{age_mins // 60}h ago"
+            else:
+                ago = f"{age_mins // 1440}d ago"
+            return {"lastCommit": ago, "timestamp": commit_ts}
+    except:
+        pass
+    return None
+
 def get_email_status():
     """Get last email check time from cron job."""
     if not CRON_FILE.exists():
@@ -732,11 +758,13 @@ def build_status():
     internet = check_internet()
     openclaw_status = get_openclaw_status()
     email_status = get_email_status()
+    git_status = get_git_status()
     return {
         "ts": datetime.now().isoformat(),
         "agents": agents,
         "internet": internet,
         "email": email_status,
+        "git": git_status,
         "openclaw": openclaw_status,
         "defaultModel": get_default_model(),
         "availableModels": _model_cache.get("models", []),

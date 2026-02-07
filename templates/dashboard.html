@@ -359,6 +359,14 @@
                     <div class="stat-tip">${d.email ? (d.email.enabled ? 'Last inbox check' : 'Email check disabled') : 'No email cron job found'}</div>
                 </div>
                 <div class="stat">
+                    <div class="status-icon ${d.git?'ok':'off'}"></div>
+                    <div>
+                        <div class="stat-v">${d.git?.lastCommit || 'N/A'}</div>
+                        <div class="stat-l">Repo</div>
+                    </div>
+                    <div class="stat-tip">Last dashboard commit</div>
+                </div>
+                <div class="stat">
                     <div class="status-icon ${s.jobs_healthy?'ok':'err'}"></div>
                     <div>
                         <div class="stat-v">${s.jobs_ok}/${s.jobs_total}</div>
