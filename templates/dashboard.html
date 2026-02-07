@@ -180,6 +180,7 @@
         }
         .err-src { color: #f97316; font-weight: 600; font-size: 9px; }
         .err-msg { color: var(--muted); margin-top: 2px; word-break: break-all; font-size: 9px; }
+        .err-fix { color: #22c55e; font-size: 8px; margin-top: 2px; opacity: 0.8; }
 
         .note { font-size: 9px; color: #444; text-align: center; padding: 4px; }
     </style>
@@ -492,12 +493,15 @@
             if (sec?.findings && sec.findings.length > 0) {
                 const severityColors = { critical: '#ef4444', warn: '#f97316', info: '#3b82f6' };
                 const severityLabels = { critical: 'CRIT', warn: 'WARN', info: 'INFO' };
-                errHtml += sec.findings.map(f => `
-                    <div class="err-row">
+                errHtml += sec.findings.map(f => {
+                    const tooltip = [f.detail, f.fix].filter(Boolean).join('\\n\\nFix: ');
+                    const fixHint = f.fix ? `<div class="err-fix">${f.fix.split('.')[0]}</div>` : '';
+                    return `
+                    <div class="err-row" title="${tooltip.replace(/"/g, '&quot;').replace(/\n/g, '&#10;')}">
                         <div class="err-src" style="color: ${severityColors[f.severity] || '#888'}">${severityLabels[f.severity] || f.severity}</div>
-                        <div class="err-msg">${f.title}</div>
+                        <div class="err-msg">${f.title}${fixHint}</div>
                     </div>
-                `).join('');
+                `}).join('');
             }
             
             errPanel.style.display = 'block';

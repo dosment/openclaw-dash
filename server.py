@@ -671,6 +671,8 @@ def get_openclaw_status():
                     {
                         "severity": f.get("severity", "info"),
                         "title": f.get("title", "Unknown"),
+                        "detail": f.get("detail", ""),
+                        "fix": f.get("remediation", ""),
                     }
                     for f in findings
                 ],
