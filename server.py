@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tony Status Dashboard - Local web server for OpenClaw visibility with SSE."""
+"""OpenClaw Dashboard - Local web server for OpenClaw visibility with SSE."""
 
 import json
 import re
@@ -107,7 +107,7 @@ def refresh_model_cache():
 # Refresh on startup
 refresh_model_cache()
 
-# Multiple agent base directories (main OpenClaw + Steve's separate instance)
+# Agent base directories (add additional paths here if needed)
 AGENT_BASES = [
     OPENCLAW_DIR / "agents",
 ]
@@ -147,11 +147,11 @@ def get_default_model():
             config = json.load(f)
         agents = config.get("agents", {})
         agent_list = agents.get("list", [])
-        for agent in agent_list:
-            if agent.get("id") == "tony":
-                model = agent.get("model")
-                if model:
-                    return categorize_model(model)
+        # Check first agent in list for model override
+        if agent_list and len(agent_list) > 0:
+            model = agent_list[0].get("model")
+            if model:
+                return categorize_model(model)
         defaults = agents.get("defaults", {})
         model_config = defaults.get("model", {})
         if isinstance(model_config, dict):
@@ -374,7 +374,7 @@ def count_session_messages(session_file):
 
 def extract_channel(key):
     """Extract channel type from session key."""
-    # Keys like: agent:tony:discord:channel:123, agent:tony:telegram:chat:123, agent:tony:main
+    # Keys like: agent:<name>:discord:channel:123, agent:<name>:telegram:chat:123, agent:<name>:main
     parts = key.split(":")
     if len(parts) >= 3:
         channel = parts[2].lower()

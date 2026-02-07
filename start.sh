@@ -1,3 +1,3 @@
 #!/bin/bash
-cd /home/dan/clawd/dashboard
+cd "$(dirname "$0")"
 exec python3 server.py
