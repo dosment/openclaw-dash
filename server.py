@@ -48,10 +48,12 @@ def refresh_model_cache():
         env = os.environ.copy()
         nvm_bin = str(Path.home() / ".nvm/versions/node/v22.22.0/bin")
         env["PATH"] = f"{nvm_bin}:{env.get('PATH', '')}"
+        env["CI"] = "true"  # Suppress interactive prompts
+        env["TERM"] = "dumb"
         
         result = subprocess.run(
             [openclaw_bin, "models", "list"],
-            capture_output=True, text=True, timeout=10, env=env
+            capture_output=True, text=True, timeout=30, env=env
         )
         if result.returncode != 0:
             return
@@ -673,15 +675,22 @@ def get_openclaw_status():
         env = os.environ.copy()
         nvm_bin = str(Path.home() / ".nvm/versions/node/v22.22.0/bin")
         env["PATH"] = f"{nvm_bin}:{env.get('PATH', '')}"
+        env["CI"] = "true"  # Suppress interactive prompts
+        env["TERM"] = "dumb"
         
         result = subprocess.run(
             [openclaw_bin, "status", "--json"],
-            capture_output=True, text=True, timeout=10, env=env
+            capture_output=True, text=True, timeout=30, env=env
         )
         if result.returncode != 0:
             return None
         
-        data = json.loads(result.stdout)
+        # Strip any header/warning lines before JSON
+        stdout = result.stdout
+        json_start = stdout.find('{')
+        if json_start == -1:
+            return None
+        data = json.loads(stdout[json_start:])
         
         # Extract what we need
         gateway = data.get("gateway", {})
@@ -713,7 +722,10 @@ def get_openclaw_status():
         
         _openclaw_status_cache = {"data": status, "updated": now}
         return status
-    except:
+    except Exception as e:
+        import traceback
+        print(f"get_openclaw_status error: {e}")
+        traceback.print_exc()
         return None
 
 def get_recent_errors():
