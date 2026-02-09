@@ -550,12 +550,12 @@
                     return `<div class="seg" style="width:${p}%; background:${color}" title="${m}: ${v.toLocaleString()} msgs (${p.toFixed(1)}%)">${p>8 ? p.toFixed(0)+'%' : ''}</div>`;
                 }).join('');
                 
-                const legendModels = ['opus-4.6', 'opus-4.5', 'sonnet', 'kimi-k2.5', 'flash-3', 'flash-2.5', 'neotron', 'deepseek'];
+                const legendModels = ['opus-4.6', 'opus-4.5', 'sonnet', 'haiku', 'kimi-k2.5', 'flash-3', 'flash-2.5', 'neotron', 'deepseek'];
                 const leg = legendModels.map(m => {
                     const v = data[m] || 0;
                     const p = (v/total*100).toFixed(1);
                     const color = modelColors[m] || '#444';
-                    if (v === 0 && !['neotron', 'deepseek', 'opus-4.6'].includes(m)) return ''; 
+                    if (v === 0 && !['neotron', 'deepseek', 'opus-4.6', 'haiku'].includes(m)) return ''; 
                     return `<span><div class="leg-dot" style="background:${color}"></div>${m}: ${v > 0 ? p + '%' : '0%'}</span>`;
                 }).join('');
                 
